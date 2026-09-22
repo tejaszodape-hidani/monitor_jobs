@@ -1,0 +1,17 @@
+{
+  "name": "job-ingestion-monitor",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "mysql2": "^3.14.4"
+  },
+  "devDependencies": {
+    "@vercel/node": "^5.3.16",
+    "typescript": "^5.9.3",
+    "vercel": "^48.0.0"
+  }
+}

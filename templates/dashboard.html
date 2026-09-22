@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Job Monitor</title>
+  <style>
+    :root { color-scheme: dark; --panel:#172033; --line:#2a3955; --muted:#9babc4; --accent:#62d6a2; }
+    * { box-sizing:border-box; } body { margin:0; background:#0d1423; color:#edf3ff; font:14px/1.45 Inter, ui-sans-serif, system-ui, sans-serif; }
+    main { max-width:1480px; margin:auto; padding:32px 24px; } h1 { margin:0; font-size:28px; } .sub { color:var(--muted); margin:5px 0 25px; }
+    .stats { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; margin-bottom:22px; } .stat { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; }
+    .stat span { color:var(--muted); display:block; } .stat strong { font-size:30px; margin-top:4px; display:block; color:var(--accent); }
+    form { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; } input, select, button, a.button { border:1px solid var(--line); border-radius:8px; padding:10px 12px; background:var(--panel); color:inherit; font:inherit; } input[type=search] { min-width:260px; } button, a.button { cursor:pointer; text-decoration:none; } button { background:#276749; border-color:#31865d; } .error { background:#4b1f2b; border:1px solid #903b50; padding:14px; border-radius:9px; margin:20px 0; white-space:pre-wrap; }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:12px; } table { width:100%; border-collapse:collapse; min-width:1180px; background:var(--panel); } th, td { text-align:left; padding:13px 14px; border-bottom:1px solid var(--line); vertical-align:top; } th { color:var(--muted); font-weight:600; position:sticky; top:0; background:#1c2940; } tr:last-child td { border:0; } .title { font-weight:650; } .muted { color:var(--muted); font-size:12px; } .tag { display:inline-block; background:#263854; color:#c5d9fb; padding:3px 7px; border-radius:999px; font-size:12px; } .logo { width:38px; height:38px; border-radius:9px; object-fit:contain; background:#fff; border:1px solid var(--line); padding:3px; } .logo-fallback { width:38px; height:38px; border-radius:9px; display:grid; place-items:center; background:#263854; color:#c5d9fb; font-weight:700; } .empty { padding:44px; text-align:center; color:var(--muted); background:var(--panel); }
+    .breakdown { margin:24px 0; } h2 { font-size:18px; margin:0 0 4px; } .breakdown .sub { margin:0 0 10px; } .breakdown-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; } .breakdown-item { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:13px; } .breakdown-item span { display:block; color:var(--muted); font-size:12px; } .breakdown-item strong { display:block; margin:3px 0 7px; } .breakdown-item b { color:var(--accent); }
+    .pagination { display:flex; justify-content:space-between; align-items:center; margin-top:16px; color:var(--muted); } @media(max-width:680px) { main{padding:20px 14px}.stats{grid-template-columns:1fr} input[type=search]{min-width:0; flex:1} }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Job ingestion monitor</h1>
+    <p class="sub">Jobs grouped by <code>createdAt</code> · timezone: {{ timezone }}</p>
+    <section class="stats">
+      <div class="stat"><span>Added today ({{ today.strftime('%d %b') }})</span><strong>{{ today_count }}</strong></div>
+      <div class="stat"><span>Added yesterday</span><strong>{{ yesterday_count }}</strong></div>
+      <div class="stat"><span>Showing for {{ selected_day.strftime('%d %b %Y') }}</span><strong>{{ total }}</strong></div>
+    </section>
+    <form method="get">
+      <input type="date" name="date" value="{{ selected_day.isoformat() }}">
+      <select name="source"><option value="">All sources</option>{% for item in sources %}<option value="{{ item }}" {% if item == selected_source %}selected{% endif %}>{{ item }}</option>{% endfor %}</select>
+      <input type="search" name="q" value="{{ search }}" placeholder="Search title, company, or location">
+      <button type="submit">Apply</button>
+      <a class="button" href="/?date={{ today.isoformat() }}">Today</a>
+      <a class="button" href="/?date={{ yesterday.isoformat() }}">Yesterday</a>
+    </form>
+    {% if error %}<div class="error"><strong>Could not load jobs.</strong>\n{{ error }}</div>{% endif %}
+    {% if breakdown %}
+    <section class="breakdown">
+      <h2>Jobs by source and category</h2>
+      <p class="sub">Complete breakdown for {{ selected_day.strftime('%d %b %Y') }}{% if selected_source %} · {{ selected_source }} only{% endif %}{% if search %}; unaffected by the search filter{% endif %}.</p>
+      <div class="breakdown-grid">
+        {% for item in breakdown %}
+        <div class="breakdown-item"><span>{{ item.source }}</span><strong>{{ item.category }}</strong><b>{{ item.count }} job{{ '' if item.count == 1 else 's' }}</b></div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+    <div class="table-wrap">
+      {% if jobs %}
+      <table><thead><tr><th>Added</th><th>Logo</th><th>Job</th><th>Company</th><th>Location</th><th>Type</th><th>Skills</th><th>Source</th><th>Category</th></tr></thead>
+      <tbody>{% for job in jobs %}<tr>
+        <td>{{ job.createdAt|display_time }}</td>
+        <td>{% if job.companyLogo %}<img class="logo" src="{{ job.companyLogo }}" alt="{{ job.companyName or 'Company' }} logo" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'logo-fallback',textContent:'?'})")">{% else %}<span class="logo-fallback" aria-label="No company logo">{{ (job.companyName or '?')[:1]|upper }}</span>{% endif %}</td>
+        <td><div class="title">{% if job.jobUrl %}<a href="{{ job.jobUrl }}" target="_blank" rel="noopener">{{ job.jobTitle or 'Untitled job' }}</a>{% else %}{{ job.jobTitle or 'Untitled job' }}{% endif %}</div><span class="muted">{{ job.jobId or 'No job ID' }}</span></td>
+        <td>{{ job.companyName or '—' }}</td><td>{{ job.jobLocation or job.companyLocation or '—' }}</td><td><span class="tag">{{ job.jobType or '—' }}</span></td>
+        <td class="muted">{{ job.skills|skills_text }}</td><td>{{ job.jobSource or '—' }}</td><td><span class="tag">{{ job.category or 'General' }}</span></td>
+      </tr>{% endfor %}</tbody></table>
+      {% else %}<div class="empty">No jobs found for this date{% if search %} matching “{{ search }}”{% endif %}.</div>{% endif %}
+    </div>
+    {% if jobs %}<nav class="pagination"><span>Page {{ page }} · {{ total }} job{{ '' if total == 1 else 's' }}</span><span>{% if page > 1 %}<a class="button" href="/?date={{ selected_day.isoformat() }}&source={{ selected_source|urlencode }}&q={{ search|urlencode }}&page={{ page - 1 }}">Previous</a>{% endif %} {% if has_next %}<a class="button" href="/?date={{ selected_day.isoformat() }}&source={{ selected_source|urlencode }}&q={{ search|urlencode }}&page={{ page + 1 }}">Next</a>{% endif %}</span></nav>{% endif %}
+  </main>
+</body>
+</html>
