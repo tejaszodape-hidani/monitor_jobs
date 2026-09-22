@@ -10,7 +10,11 @@ type Job = {
   companyLocation: string | null;
   jobLocation: string | null;
   jobType: string | null;
+  yearOfExperience: string | null;
   skills: unknown;
+  jobPostTime: string | null;
+  jobDescription: string | null;
+  salary: string | null;
   jobSource: string | null;
   category: string | null;
   jobUrl: string | null;
@@ -76,7 +80,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const db = getPool();
     const [[{ total }]] = await db.query<mysql.RowDataPacket[]>(`SELECT COUNT(*) AS total FROM \`Job\` WHERE ${where}`, filterParams);
     const [jobs] = await db.query<mysql.RowDataPacket[]>(
-      `SELECT \`id\`, \`jobId\`, \`jobTitle\`, \`companyName\`, \`companyLogo\`, \`companyLocation\`, \`jobLocation\`, \`jobType\`, \`skills\`, \`jobSource\`, \`category\`, \`jobUrl\`, \`createdAt\`
+      `SELECT \`id\`, \`jobId\`, \`jobTitle\`, \`companyName\`, \`companyLogo\`, \`companyLocation\`, \`jobLocation\`, \`jobType\`, \`yearOfExperience\`, \`skills\`, \`jobPostTime\`, \`jobDescription\`, \`salary\`, \`jobSource\`, \`category\`, \`jobUrl\`, \`createdAt\`
        FROM \`Job\` WHERE ${where} ORDER BY \`createdAt\` DESC, \`id\` DESC LIMIT ? OFFSET ?`,
       [...filterParams, pageSize, (page - 1) * pageSize],
     );
