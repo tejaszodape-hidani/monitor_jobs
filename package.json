@@ -3,15 +3,17 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "start":"node server.js",
-    "dev": "vercel dev",
+    "start": "tsx server.ts",
+    "dev": "tsx server.ts",
     "deploy": "vercel --prod"
   },
   "dependencies": {
+    "dotenv": "^16.6.1",
     "mysql2": "^3.14.4"
   },
   "devDependencies": {
     "@vercel/node": "^5.3.16",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vercel": "^48.0.0"
   }
