@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Scraper Dashboard</title>
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --accent: #10b981;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        /* Filter Controls */
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: fadeIn 1s ease-out;
+        }
+
+        select {
+            appearance: none;
+            background-color: rgba(15, 23, 42, 0.8);
+            color: var(--text-main);
+            border: 1px solid var(--card-border);
+            padding: 0.75rem 2.5rem 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            outline: none;
+            transition: all 0.2s ease;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat, repeat;
+            background-position: right .7em top 50%, 0 0;
+            background-size: .65em auto, 100%;
+        }
+
+        select:hover, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .file-upload { position: relative; display: inline-block; }
+        .file-upload input[type="file"] { display: none; }
+        .upload-btn {
+            background-color: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-block;
+            transition: background-color 0.2s;
+        }
+        .upload-btn:hover { background-color: var(--primary-hover); }
+
+        #job-count {
+            display: flex;
+            align-items: center;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Job Grid */
+        .job-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .job-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            animation: fadeInUp 0.5s ease-out backwards;
+        }
+
+        .job-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            border-color: rgba(59, 130, 246, 0.4);
+        }
+
+        .job-header {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            align-items: flex-start;
+        }
+
+        .company-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .company-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .company-logo .fallback {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: var(--text-muted);
+        }
+
+        .job-title-wrapper {
+            flex-grow: 1;
+        }
+
+        .job-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin: 0 0 0.25rem 0;
+            color: var(--text-main);
+            line-height: 1.3;
+        }
+
+        .company-name {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .meta-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tag {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 9999px;
+            background-color: rgba(255, 255, 255, 0.05);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .tag.source { background-color: rgba(59, 130, 246, 0.1); color: #93c5fd; border-color: rgba(59, 130, 246, 0.2); }
+        .tag.salary { background-color: rgba(16, 185, 129, 0.1); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.2); }
+
+        .job-details {
+            flex-grow: 1;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .apply-btn {
+            display: block;
+            width: 100%;
+            padding: 0.75rem;
+            text-align: center;
+            background-color: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+        }
+
+        .apply-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .loading {
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            padding: 3rem;
+            grid-column: 1 / -1;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .modal-body ul, .modal-body ol {
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .modal-body p {
+            margin-bottom: 1rem;
+        }
+
+        .modal-body a {
+            color: var(--primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 2rem;
+            cursor: pointer;
+            transition: color 0.2s;
+            line-height: 1;
+            margin-top: -0.5rem;
+        }
+
+        .modal-close:hover {
+            color: #ef4444;
+        }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Tech Jobs Dashboard</h1>
+            <div class="subtitle">Beautiful insights from your multi-platform scraper</div>
+        </header>
+
+        <div class="controls">
+            <div class="file-upload" id="upload-container">
+                <input type="file" id="json-upload" accept=".json" onchange="handleFileUpload(event)">
+                <label for="json-upload" class="upload-btn">📁 Select jobs JSON file</label>
+            </div>
+
+            <select id="filter-source" onchange="filterJobs()" style="display: none;">
+                <option value="all">All Sources</option>
+            </select>
+            
+            <select id="filter-category" onchange="filterJobs()" style="display: none;">
+                <option value="all">All Categories</option>
+            </select>
+            
+            <div id="job-count">Please select a file above...</div>
+        </div>
+
+        <div id="job-grid" class="job-grid">
+            <div class="loading">Loading jobs data...</div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="job-modal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div id="modal-title-area"></div>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-desc"></div>
+            <div style="padding: 1.5rem; border-top: 1px solid var(--card-border);">
+                <a href="#" target="_blank" id="modal-apply-btn" class="apply-btn">Apply Now</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allJobs = [];
+
+        // Handle Local File Upload
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('job-count').textContent = "Loading file...";
+            document.getElementById('job-grid').innerHTML = '<div class="loading">Parsing JSON...</div>';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    allJobs = JSON.parse(e.target.result);
+                    
+                    // Show filters and hide upload button
+                    document.getElementById('filter-source').style.display = 'block';
+                    document.getElementById('filter-category').style.display = 'block';
+                    document.getElementById('upload-container').style.display = 'none';
+                    
+                    populateFilters();
+                    filterJobs();
+                } catch (error) {
+                    console.error("Error parsing JSON:", error);
+                    document.getElementById('job-grid').innerHTML = `<div class="loading" style="color: #ef4444;">Invalid JSON file. Please make sure to upload a valid JSON.</div>`;
+                    document.getElementById('job-count').textContent = "Error";
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function populateFilters() {
+            const sourceSet = new Set();
+            const categorySet = new Set();
+
+            allJobs.forEach(job => {
+                if (job.jobSource) sourceSet.add(job.jobSource);
+                if (job.category) categorySet.add(job.category);
+            });
+
+            const sourceSelect = document.getElementById('filter-source');
+            Array.from(sourceSet).sort().forEach(src => {
+                sourceSelect.innerHTML += `<option value="${src}">${src}</option>`;
+            });
+
+            const categorySelect = document.getElementById('filter-category');
+            Array.from(categorySet).sort().forEach(cat => {
+                categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+        }
+
+        function filterJobs() {
+            const selectedSource = document.getElementById('filter-source').value;
+            const selectedCategory = document.getElementById('filter-category').value;
+
+            const filtered = allJobs.filter(job => {
+                const matchSource = selectedSource === 'all' || job.jobSource === selectedSource;
+                const matchCategory = selectedCategory === 'all' || job.category === selectedCategory;
+                return matchSource && matchCategory;
+            });
+
+            document.getElementById('job-count').textContent = `Showing ${filtered.length} jobs`;
+            renderJobs(filtered);
+        }
+
+        function renderJobs(jobs) {
+            const grid = document.getElementById('job-grid');
+            grid.innerHTML = '';
+
+            if (jobs.length === 0) {
+                grid.innerHTML = '<div class="loading">No jobs match your filters.</div>';
+                return;
+            }
+
+            // Render first 200 to avoid locking up browser
+            const displayLimit = 200;
+            const jobsToDisplay = jobs.slice(0, displayLimit);
+
+            jobsToDisplay.forEach((job, index) => {
+                const card = document.createElement('div');
+                card.className = 'job-card';
+                card.style.animationDelay = `${(index % 20) * 0.05}s`;
+                card.style.cursor = 'pointer';
+                card.onclick = function(e) {
+                    if(e.target.tagName.toLowerCase() === 'a') return;
+                    openModal(job);
+                };
+
+                let logoUrl = job.companyLogo;
+                if (!logoUrl && job.companyName) {
+                    const cleanName = job.companyName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                    // Using clearbit API for domain-based logo fetching
+                    logoUrl = `https://logo.clearbit.com/${cleanName}.com`;
+                }
+
+                const logoHtml = logoUrl 
+                    ? `<img src="${logoUrl}" alt="${job.companyName} logo" onerror="this.outerHTML='<div class=\\'fallback\\'>${job.companyName.charAt(0)}</div>'">`
+                    : `<div class="fallback">${job.companyName ? job.companyName.charAt(0) : '?'}</div>`;
+
+                let tagsHtml = `<span class="tag source">${job.jobSource || 'Unknown'}</span>`;
+                if (job.jobLocation) tagsHtml += `<span class="tag">📍 ${job.jobLocation}</span>`;
+                if (job.jobType) tagsHtml += `<span class="tag">🏢 ${job.jobType}</span>`;
+                if (job.yearOfExperience && job.yearOfExperience !== "Not Specified") tagsHtml += `<span class="tag">⏱️ ${job.yearOfExperience}</span>`;
+                if (job.salary) tagsHtml += `<span class="tag salary">💰 ${job.salary}</span>`;
+                if (job.jobPostTime) {
+                    const postDate = new Date(job.jobPostTime);
+                    if (!isNaN(postDate)) {
+                        const formattedDate = postDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                        tagsHtml += `<span class="tag">📅 ${formattedDate}</span>`;
+                    }
+                }
+
+                if (job.skills && Array.isArray(job.skills) && job.skills.length > 0) {
+                    const maxSkills = 4;
+                    const visibleSkills = job.skills.slice(0, maxSkills);
+                    visibleSkills.forEach(skill => {
+                        tagsHtml += `<span class="tag" style="background-color: rgba(139, 92, 246, 0.1); color: #c4b5fd; border-color: rgba(139, 92, 246, 0.2);">✨ ${skill}</span>`;
+                    });
+                    if (job.skills.length > maxSkills) {
+                        tagsHtml += `<span class="tag" style="background-color: rgba(139, 92, 246, 0.1); color: #c4b5fd; border-color: rgba(139, 92, 246, 0.2);">+${job.skills.length - maxSkills} more</span>`;
+                    }
+                }
+
+                // strip HTML from description for preview
+                let descPreview = "No description available.";
+                if(job.jobDescription) {
+                    const temp = document.createElement("div");
+                    temp.innerHTML = job.jobDescription;
+                    descPreview = temp.textContent || temp.innerText || "";
+                }
+
+                card.innerHTML = `
+                    <div class="job-header">
+                        <div class="company-logo">
+                            ${logoHtml}
+                        </div>
+                        <div class="job-title-wrapper">
+                            <h2 class="job-title" title="${job.jobTitle}">${job.jobTitle}</h2>
+                            <p class="company-name">${job.companyName}</p>
+                        </div>
+                    </div>
+                    <div class="meta-tags">
+                        ${tagsHtml}
+                    </div>
+                    <div class="job-details">
+                        ${descPreview}
+                    </div>
+                    <a href="${job.jobUrl}" target="_blank" class="apply-btn">View Job</a>
+                `;
+
+                grid.appendChild(card);
+            });
+
+            if(jobs.length > displayLimit) {
+                 const notice = document.createElement('div');
+                 notice.className = 'loading';
+                 notice.textContent = `Showing 200 of ${jobs.length} jobs.`;
+                 grid.appendChild(notice);
+            }
+        }
+
+        function openModal(job) {
+            const modal = document.getElementById('job-modal');
+            
+            let logoUrl = job.companyLogo;
+            if (!logoUrl && job.companyName) {
+                const cleanName = job.companyName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                logoUrl = `https://logo.clearbit.com/${cleanName}.com`;
+            }
+            const logoHtml = logoUrl 
+                ? `<img src="${logoUrl}" alt="logo" style="width:48px;height:48px;object-fit:contain;border-radius:0.5rem;background:rgba(255,255,255,0.1);margin-right:1rem;" onerror="this.style.display='none'">`
+                : '';
+
+            document.getElementById('modal-title-area').innerHTML = `
+                <div style="display:flex;align-items:center;">
+                    ${logoHtml}
+                    <div>
+                        <h2 style="margin:0 0 0.25rem 0;font-size:1.5rem;color:var(--text-main);">${job.jobTitle}</h2>
+                        <div style="color:var(--text-muted);">${job.companyName} • ${job.jobLocation || 'Remote'}</div>
+                        <div style="margin-top: 0.5rem; display: flex; gap: 0.75rem; font-size: 0.9rem;">
+                            ${job.yearOfExperience && job.yearOfExperience !== "Not Specified" ? `<span style="background: rgba(16, 185, 129, 0.1); color: #6ee7b7; padding: 0.2rem 0.6rem; border-radius: 9999px;">⏱️ ${job.yearOfExperience}</span>` : ''}
+                            ${job.salary ? `<span style="background: rgba(16, 185, 129, 0.1); color: #6ee7b7; padding: 0.2rem 0.6rem; border-radius: 9999px;">💰 ${job.salary}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            let finalDesc = job.jobDescription || "No description provided.";
+            if (job.jobSource === 'LinkedIn' && finalDesc.includes('top-card-layout')) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = finalDesc;
+                const descNode = tempDiv.querySelector('.description__text') || tempDiv.querySelector('.show-more-less-html__markup');
+                if (descNode) {
+                    finalDesc = descNode.innerHTML;
+                }
+            }
+            
+            let skillsHtml = '';
+            if (job.skills && Array.isArray(job.skills) && job.skills.length > 0) {
+                skillsHtml = `
+                    <div style="margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--card-border);">
+                        <strong style="width: 100%; color: var(--text-main); margin-bottom: 0.25rem;">Key Skills / Requirements:</strong>
+                        ${job.skills.map(skill => `<span class="tag" style="background-color: rgba(139, 92, 246, 0.1); color: #c4b5fd; border-color: rgba(139, 92, 246, 0.2);">✨ ${skill}</span>`).join('')}
+                    </div>
+                `;
+            }
+            
+            document.getElementById('modal-desc').innerHTML = skillsHtml + finalDesc;
+            document.getElementById('modal-apply-btn').href = job.jobUrl;
+            
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('job-modal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Waiting for user file upload
+    </script>
+</body>
+</html>
