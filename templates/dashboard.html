@@ -27,6 +27,8 @@
     </section>
     <form method="get">
       <input type="date" name="date" value="{{ selected_day.isoformat() }}">
+      <select name="country" id="country-select"><option value="">All countries</option>{% for item in countries %}<option value="{{ item }}" {% if item == selected_country %}selected{% endif %}>{{ item }}</option>{% endfor %}</select>
+      <button type="button" onclick="window.location.href='/?date={{ today.isoformat() }}&country=' + document.getElementById('country-select').value" style="background:#263854;border-color:#3b82f6;">Jobs today by country</button>
       <select name="source"><option value="">All sources</option>{% for item in sources %}<option value="{{ item }}" {% if item == selected_source %}selected{% endif %}>{{ item }}</option>{% endfor %}</select>
       <input type="search" name="q" value="{{ search }}" placeholder="Search title, company, or location">
       <button type="submit">Apply</button>
@@ -45,14 +47,25 @@
       </div>
     </section>
     {% endif %}
+    {% if country_breakdown %}
+    <section class="breakdown">
+      <h2>Jobs by country</h2>
+      <p class="sub">Job distribution by country for {{ selected_day.strftime('%d %b %Y') }}.</p>
+      <div class="breakdown-grid">
+        {% for item in country_breakdown %}
+        <div class="breakdown-item"><span>{{ item.country }}</span><b>{{ item.count }} job{{ '' if item.count == 1 else 's' }}</b></div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
     <div class="table-wrap">
       {% if jobs %}
-      <table><thead><tr><th>Added</th><th>Logo</th><th>Job</th><th>Company</th><th>Location</th><th>Type</th><th>Skills</th><th>Source</th><th>Category</th></tr></thead>
+      <table><thead><tr><th>Added</th><th>Logo</th><th>Job</th><th>Company</th><th>Country</th><th>Location</th><th>Type</th><th>Skills</th><th>Source</th><th>Category</th></tr></thead>
       <tbody>{% for job in jobs %}<tr>
         <td>{{ job.createdAt|display_time }}</td>
-        <td>{% if job.companyLogo %}<img class="logo" src="{{ job.companyLogo }}" alt="{{ job.companyName or 'Company' }} logo" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'logo-fallback',textContent:'?'})")">{% else %}<span class="logo-fallback" aria-label="No company logo">{{ (job.companyName or '?')[:1]|upper }}</span>{% endif %}</td>
+        <td>{% if job.companyLogo %}<img class="logo" src="{{ job.companyLogo }}" alt="{{ job.companyName or 'Company' }} logo" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'logo-fallback',textContent:'?'}))">{% else %}<span class="logo-fallback" aria-label="No company logo">{{ (job.companyName or '?')[:1]|upper }}</span>{% endif %}</td>
         <td><div class="title">{% if job.jobUrl %}<a href="{{ job.jobUrl }}" target="_blank" rel="noopener">{{ job.jobTitle or 'Untitled job' }}</a>{% else %}{{ job.jobTitle or 'Untitled job' }}{% endif %}</div><span class="muted">{{ job.jobId or 'No job ID' }}</span></td>
-        <td>{{ job.companyName or '—' }}</td><td>{{ job.jobLocation or job.companyLocation or '—' }}</td><td><span class="tag">{{ job.jobType or '—' }}</span></td>
+        <td>{{ job.companyName or '—' }}</td><td>{{ job.country or '—' }}</td><td>{{ job.jobLocation or job.companyLocation or '—' }}</td><td><span class="tag">{{ job.jobType or '—' }}</span></td>
         <td class="muted">{{ job.skills|skills_text }}</td><td>{{ job.jobSource or '—' }}</td><td><span class="tag">{{ job.category or 'General' }}</span></td>
       </tr>{% endfor %}</tbody></table>
       {% else %}<div class="empty">No jobs found for this date{% if search %} matching “{{ search }}”{% endif %}.</div>{% endif %}

@@ -10,6 +10,10 @@ The Vercel version is a static dashboard in `public/index.html` and a TypeScript
 
 Do not deploy or share `.env`. A standalone HTML file cannot securely fetch your private MySQL database without a server-side API.
 
+## Database migrations
+
+To add a `country` column and backfill existing jobs with `US`, run the SQL in `migrations/001_add_country_to_jobs.sql` once with a MySQL client connected to your database. The column is `VARCHAR(100) NOT NULL DEFAULT 'US'`, so newly inserted jobs receive `US` unless the scraper supplies another value.
+
 A read-only local dashboard for jobs added to the existing `Job` table. It shows counts for today and yesterday, lets you select any date, and lists matching jobs with search and pagination.
 
 ## Run

@@ -43,6 +43,7 @@ class Job(Base):
     jobSource: Mapped[str | None] = mapped_column(String(100))
     category: Mapped[str | None] = mapped_column(String(100))
     jobUrl: Mapped[str | None] = mapped_column(String(1000))
+    country: Mapped[str | None] = mapped_column(String(50))
     createdAt: Mapped[datetime | None] = mapped_column(DateTime)
     updatedAt: Mapped[datetime | None] = mapped_column(DateTime)
 
@@ -92,6 +93,7 @@ def dashboard():
     page = max(request.args.get("page", 1, type=int), 1)
     search = request.args.get("q", "").strip()
     selected_source = request.args.get("source", "").strip()
+    selected_country = request.args.get("country", "").strip()
     start, end = day_bounds(selected_day)
 
     try:
@@ -103,10 +105,19 @@ def dashboard():
                 .distinct()
                 .order_by(source_expression)
             ).all()
+            
+            country_expression = func.coalesce(Job.country, "Unknown")
+            countries = session.scalars(
+                select(country_expression).where(Job.createdAt >= start, Job.createdAt < end)
+                .distinct()
+                .order_by(country_expression)
+            ).all()
 
             base_query = day_query
             if selected_source:
                 base_query = base_query.where(source_expression == selected_source)
+            if selected_country:
+                base_query = base_query.where(country_expression == selected_country)
             if search:
                 term = f"%{search}%"
                 base_query = base_query.where(
@@ -135,20 +146,30 @@ def dashboard():
                 .group_by(Job.jobSource, Job.category)
                 .order_by(func.count().desc(), Job.jobSource, Job.category)
             ).all()
+            
+            country_breakdown = session.execute(
+                select(
+                    country_expression.label("country"),
+                    func.count().label("count"),
+                )
+                .where(Job.createdAt >= start, Job.createdAt < end)
+                .group_by(Job.country)
+                .order_by(func.count().desc())
+            ).all()
 
             today_start, today_end = day_bounds(today)
             yesterday_start, yesterday_end = day_bounds(today - timedelta(days=1))
             today_count = session.scalar(select(func.count()).select_from(Job).where(Job.createdAt >= today_start, Job.createdAt < today_end)) or 0
             yesterday_count = session.scalar(select(func.count()).select_from(Job).where(Job.createdAt >= yesterday_start, Job.createdAt < yesterday_end)) or 0
     except Exception as exc:
-        return render_template("dashboard.html", error=str(exc), jobs=[], breakdown=[], sources=[], total=0, today_count=0, yesterday_count=0,
-                               selected_day=selected_day, today=today, yesterday=today - timedelta(days=1), search=search, selected_source=selected_source, page=page, has_next=False,
+        return render_template("dashboard.html", error=str(exc), jobs=[], breakdown=[], country_breakdown=[], sources=[], countries=[], total=0, today_count=0, yesterday_count=0,
+                               selected_day=selected_day, today=today, yesterday=today - timedelta(days=1), search=search, selected_source=selected_source, selected_country=selected_country, page=page, has_next=False,
                                timezone=APP_TIMEZONE)
 
     return render_template(
         "dashboard.html", jobs=jobs, total=total, today_count=today_count, yesterday_count=yesterday_count,
-        selected_day=selected_day, today=today, yesterday=today - timedelta(days=1), search=search, selected_source=selected_source,
-        page=page, has_next=page * PAGE_SIZE < total, breakdown=breakdown, sources=sources,
+        selected_day=selected_day, today=today, yesterday=today - timedelta(days=1), search=search, selected_source=selected_source, selected_country=selected_country,
+        page=page, has_next=page * PAGE_SIZE < total, breakdown=breakdown, country_breakdown=country_breakdown, sources=sources, countries=countries,
         error=None, timezone=APP_TIMEZONE,
     )
 
